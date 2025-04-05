@@ -6,6 +6,7 @@ import { Route, Pool, FeeAmount } from "@uniswap/v3-sdk"
 import { Token, UseQuoteResult } from "@/utils/types"
 import { getEthersProvider } from "../lib/getEthersProvider"
 import { getPoolData } from "../lib/getPoolData"
+import { toast } from "react-toastify"
 
 export function useQuote(
   fromToken: Token | null,
@@ -31,7 +32,10 @@ export function useQuote(
 
         const poolData = await getPoolData(provider, tokenIn, tokenOut, FeeAmount.MEDIUM)
         
-        if (!poolData) return setQuote({ quote: "", minReceived: "" })
+        if (!poolData) {
+          toast.error("No direct pool for this swap")
+          return setQuote({ quote: "", minReceived: "" })
+        }
 
         const pool = new Pool(
           tokenIn,

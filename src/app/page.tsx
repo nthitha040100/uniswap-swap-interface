@@ -4,6 +4,7 @@ import { useActiveAccount } from "thirdweb/react"
 import Header from "./components/Header"
 import ConnectWallet from "./components/ConnectWallet"
 import SwapWidget from "./components/SwapWidget"
+import { Bounce, ToastContainer } from "react-toastify"
 
 export default function Home() {
   const account = useActiveAccount()
@@ -18,7 +19,20 @@ export default function Home() {
         </div>
       )}
 
-      <SwapWidget />      
+      <SwapWidget />
+      <ToastContainer
+        position="bottom-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+        transition={Bounce}
+      />
     </>
   )
 }
