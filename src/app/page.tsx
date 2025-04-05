@@ -3,6 +3,7 @@
 import { useActiveAccount } from "thirdweb/react"
 import Header from "./components/Header"
 import ConnectWallet from "./components/ConnectWallet"
+import SwapWidget from "./components/SwapWidget"
 
 export default function Home() {
   const account = useActiveAccount()
@@ -16,7 +17,8 @@ export default function Home() {
           <ConnectWallet />
         </div>
       )}
-      
+
+      <SwapWidget />      
     </>
   )
 }
