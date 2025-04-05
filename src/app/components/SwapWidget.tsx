@@ -4,14 +4,8 @@ import { useState } from "react"
 import TokenSelector from "./TokenSelector"
 import { AiOutlineSwap } from "react-icons/ai";
 import Image from "next/image"
-
-type Token = {
-    address: string
-    name: string
-    symbol: string
-    decimals: number
-    logoURI: string
-}
+import { useTokenBalance } from "../hooks/useTokenBalance";
+import { Token } from "@/utils/types";
 
 const SwapWidget = () => {
     const [fromToken, setFromToken] = useState<Token | null>(null)
@@ -19,6 +13,9 @@ const SwapWidget = () => {
     const [fromAmount, setFromAmount] = useState("")
     const [showFromSelector, setShowFromSelector] = useState(false)
     const [showToSelector, setShowToSelector] = useState(false)
+
+    const fromBalance = useTokenBalance(fromToken)
+    const toBalance = useTokenBalance(toToken)
 
 
     const handleSwitch = () => {
@@ -57,6 +54,11 @@ const SwapWidget = () => {
                         <span>{fromToken ? fromToken.symbol : "Select ▼"}</span>
                     </button>
                 </div>
+                {fromToken && (
+                    <div className="text-xs text-zinc-500 mt-1 text-right">
+                        {Number(fromBalance).toFixed(3)} {fromToken.symbol}
+                    </div>
+                )}
             </div>
 
             <div className="flex justify-center my-4 text-gray-500">
@@ -90,6 +92,11 @@ const SwapWidget = () => {
                         <span>{toToken ? toToken.symbol : "Select ▼"}</span>
                     </button>
                 </div>
+                {toToken && (
+                    <div className="text-xs text-zinc-500 mt-1 text-right">
+                        {Number(toBalance).toFixed()} {toToken.symbol}
+                    </div>
+                )}
             </div>
 
             <button
@@ -98,7 +105,7 @@ const SwapWidget = () => {
             >
                 Swap
             </button>
-        
+
             {showFromSelector && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
                     <TokenSelector

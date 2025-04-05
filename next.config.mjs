@@ -9,6 +9,7 @@ const nextConfig = {
       'ethereum-optimism.github.io',
       'coin-images.coingecko.com',
       'ipfs.io',
+      'cryptologos.cc',
       'assets.kraken.com',
     ],
   },

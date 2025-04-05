@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThirdwebProvider } from "thirdweb/react";
+import { GlobalProvider } from "./providers/globalProvider";
 
 export const metadata: Metadata = {
   title: "Swap Widget",
@@ -16,7 +17,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="flex flex-col min-h-screen">
         <ThirdwebProvider>
-          {children}
+          <GlobalProvider>
+            {children}
+          </GlobalProvider>
         </ThirdwebProvider>
       </body>
     </html>

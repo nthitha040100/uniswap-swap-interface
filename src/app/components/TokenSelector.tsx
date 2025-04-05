@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Token } from '@/utils/types'
-import { useActiveWalletChain } from "thirdweb/react";
 import { normalizeIpfsUri } from '@/utils/normalizeIpfsUri';
 import { IoClose } from 'react-icons/io5';
+import { useGlobal } from '../providers/globalProvider';
+import { getNativeToken } from '../lib/nativeToken';
 
 const TokenSelector = ({
     onSelect,
@@ -19,26 +20,29 @@ const TokenSelector = ({
     const [tokenList, setTokenList] = useState<Token[]>([])
     const [search, setSearch] = useState('')
     const [filteredTokens, setFilteredTokens] = useState<Token[]>([])
-
-    const activeChain = useActiveWalletChain();
+    const { activeChain } = useGlobal()
 
 
     useEffect(() => {
-        fetch('https://tokens.uniswap.org')
-            .then(res => res.json())
-            .then(data => {
-                return data.tokens
-                    .filter((token: Token) => token.chainId === activeChain?.id)
-                    .map((token: Token) => ({
-                        ...token,
-                        logoURI: normalizeIpfsUri(token.logoURI),
-                    }))
-            })
-            .then(filtered => {
-                setTokenList(filtered)
-                setFilteredTokens(filtered)
-            })
-    }, [activeChain?.id])
+        fetch("https://tokens.uniswap.org")
+          .then((res) => res.json())
+          .then((data) => {
+            const filtered = data.tokens
+              .filter((token: Token) => token.chainId === activeChain?.id)
+              .map((token: Token) => ({
+                ...token,
+                logoURI: normalizeIpfsUri(token.logoURI),
+              }))
+      
+            if (activeChain?.id) {
+              const native = getNativeToken(activeChain.id)
+              filtered.unshift(native) // insert native token at the top
+            }
+      
+            setTokenList(filtered)
+            setFilteredTokens(filtered)
+          })
+      }, [activeChain?.id])
 
     useEffect(() => {
         const q = search.toLowerCase()
