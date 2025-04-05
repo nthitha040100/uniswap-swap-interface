@@ -6,13 +6,14 @@ import client from "@/utils/thirdwebClient"
 import { useGlobal } from "../providers/globalProvider"
 import { balanceOf } from "thirdweb/extensions/erc20"
 import { Token } from "@/utils/types"
-import { formatUnits } from "ethers"
+import { formatUnits } from "ethers/lib/utils"
 
 
 export function useTokenBalance(token: Token | null) {
 
     const [balance, setBalance] = useState<string>("0")
     const { activeChain, userAddress } = useGlobal()
+    
 
     useEffect(() => {
         if (!activeChain || !token || !userAddress) return

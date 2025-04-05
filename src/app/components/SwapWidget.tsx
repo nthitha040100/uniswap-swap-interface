@@ -1,21 +1,39 @@
 'use client'
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import TokenSelector from "./TokenSelector"
 import { AiOutlineSwap } from "react-icons/ai";
 import Image from "next/image"
 import { useTokenBalance } from "../hooks/useTokenBalance";
 import { Token } from "@/utils/types";
+import SlippageSelector from "./SlippageSelector";
+import { useQuote } from "../hooks/useQuote";
 
 const SwapWidget = () => {
     const [fromToken, setFromToken] = useState<Token | null>(null)
     const [toToken, setToToken] = useState<Token | null>(null)
     const [fromAmount, setFromAmount] = useState("")
+    const [toAmount, setToAmount] = useState("")
+    const [minReceived, setMinReceived] = useState("")
     const [showFromSelector, setShowFromSelector] = useState(false)
     const [showToSelector, setShowToSelector] = useState(false)
+    const [slippage, setSlippage] = useState(0.5)
+
 
     const fromBalance = useTokenBalance(fromToken)
     const toBalance = useTokenBalance(toToken)
+    const quoteAmount = useQuote(fromToken, toToken, fromAmount, slippage)
+
+    useEffect(() => {
+        async function getEstimateOut() {
+            const estimatedAmount = quoteAmount
+
+            setToAmount(estimatedAmount.quote)
+            setMinReceived(estimatedAmount.minReceived)
+        }
+
+        getEstimateOut()
+    }, [quoteAmount])
 
 
     const handleSwitch = () => {
@@ -75,6 +93,7 @@ const SwapWidget = () => {
                         disabled
                         placeholder="0.00"
                         className="w-full p-3 rounded-lg bg-zinc-800 text-white opacity-70"
+                        value={toAmount}
                     />
                     <button
                         onClick={() => setShowToSelector(true)}
@@ -93,11 +112,21 @@ const SwapWidget = () => {
                     </button>
                 </div>
                 {toToken && (
-                    <div className="text-xs text-zinc-500 mt-1 text-right">
-                        {Number(toBalance).toFixed()} {toToken.symbol}
+                    <div className="text-xs text-zinc-500 mt-1 flex justify-between items-center">
+                        <span>
+                            Minimum Received: {minReceived ? `${minReceived} ${toToken.symbol}` : "--"}
+                        </span>
+                        <span>
+                            {Number(toBalance).toFixed()} {toToken.symbol}
+                        </span>
                     </div>
                 )}
             </div>
+
+            <div className="my-5">
+                <SlippageSelector slippage={slippage} setSlippage={setSlippage} />
+            </div>
+
 
             <button
                 disabled={!fromToken || !toToken || !fromAmount}
