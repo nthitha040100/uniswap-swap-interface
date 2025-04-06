@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import TokenSelector from "./TokenSelector"
 import { AiOutlineSwap } from "react-icons/ai";
 import Image from "next/image"
@@ -12,7 +12,11 @@ import { useApprove } from "../hooks/useApprove";
 import { Token } from "@/types/swapTypes";
 import { toast } from "react-toastify";
 import { useSwap } from "../hooks/useSwap";
-import { convertToUniToken } from "../lib/conversion";
+import { convertToUniToken, toReadableAmount } from "../lib/conversion";
+import { FaGasPump } from "react-icons/fa";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { useGlobal } from "../providers/GlobalProvider";
+
 
 const SwapWidget = () => {
 
@@ -24,29 +28,76 @@ const SwapWidget = () => {
     const [showFromSelector, setShowFromSelector] = useState(false)
     const [showToSelector, setShowToSelector] = useState(false)
     const [slippage, setSlippage] = useState(0.5)
+    const [estimatedGas, setEstimatedGas] = useState<string | null>(null);
 
+    const debouncedAmountIn = useDebouncedValue(fromAmount, 400);
     const fromBalance = useTokenBalance(fromToken)
     const toBalance = useTokenBalance(toToken)
-    const quoteAmount = useQuote(
-        convertToUniToken(fromToken),
-        convertToUniToken(toToken),
-        fromAmount,
-        slippage
-    )
-    const allowance = useAllowance(fromToken);
+    const { getQuote } = useQuote()
+    const {allowance, refetchAllowance} = useAllowance(fromToken);
     const { approveToken, approveStatus } = useApprove();
     const { createTrade, executeSwap, swapStatus } = useSwap();
+    const { addTransaction } = useGlobal()
+
+    const hasSufficientBalance = parseFloat(fromBalance || "0") >= parseFloat(fromAmount || "0");
+
+    const isApproved: boolean = useMemo(() => {
+        if (!fromToken || !debouncedAmountIn) return false;
+        return parseFloat(allowance || "0") >= parseFloat(debouncedAmountIn || "0");
+    }, [allowance, fromToken, debouncedAmountIn]);
 
     useEffect(() => {
-        async function getEstimateOut() {
-            const estimatedAmount = quoteAmount
+        const fetchQuote = async () => {
+            if (
+                !fromToken ||
+                !toToken || 
+                !debouncedAmountIn ||
+                Number(debouncedAmountIn) <= 0
+            ) {
+                return;
+            }
 
-            setToAmount(estimatedAmount.quote)
-            setMinReceived(estimatedAmount.minReceived)
-        }
+            const uniFromToken = convertToUniToken(fromToken);
+            const uniToToken = convertToUniToken(toToken);
 
-        getEstimateOut()
-    }, [quoteAmount])
+            if (!uniFromToken || !uniToToken) return;
+
+            const quote = await getQuote({
+                fromToken: uniFromToken,
+                toToken: uniToToken,
+                amountIn: debouncedAmountIn,
+                slippage,
+                isApproved,
+            });
+
+            if (quote.status === "success") {
+                setToAmount(quote.quote);
+                setMinReceived(quote.minReceived);
+                setEstimatedGas(quote.gasEstimate);
+            }
+
+            if (quote.status === "noPool") {
+                setToAmount("")
+                setMinReceived("");
+                setEstimatedGas("");
+                toast.error("No direct pool for this swap");
+            }
+
+            if (quote.status === "failed") {
+                console.error("Something went wrong in fetching quote");
+            }
+        };
+
+        fetchQuote();
+    }, [
+        debouncedAmountIn,
+        fromToken,
+        toToken,
+        slippage,
+        isApproved,
+        getQuote
+    ]);
+
 
     const handleSwitch = () => {
         const temp = fromToken
@@ -56,25 +107,41 @@ const SwapWidget = () => {
 
     const hasSufficientAllowance = () => {
         if (!fromToken || !allowance) return false;
+        console.log(fromAmount, allowance)
         return parseFloat(allowance) >= parseFloat(fromAmount || "0");
     }
 
     const handleApprove = async () => {
         if (!fromToken || !fromAmount) return;
 
+        if (!hasSufficientBalance) {
+            toast.error("Insufficient token balance for approval");
+            return;
+        }
+
         await approveToken({
             token: fromToken,
             amount: fromAmount,
         });
+
     };
 
-    const handleSwap = async () => {
+    useEffect(()=>{
+        if(approveStatus.isSuccess) refetchAllowance();
+    },[approveStatus.isSuccess, refetchAllowance])
 
+
+    const handleSwap = async () => {
         const fromUniToken = convertToUniToken(fromToken);
         const toUniToken = convertToUniToken(toToken);
 
         if (!fromUniToken || !toUniToken) {
             toast.error("Missing input or wallet connection");
+            return;
+        }
+
+        if (!hasSufficientBalance) {
+            toast.error("Insufficient token balance to perform this swap");
             return;
         }
 
@@ -87,15 +154,27 @@ const SwapWidget = () => {
 
             if (!trade) return;
 
-            await executeSwap({
+            const txHash = await executeSwap({
                 trade,
                 slippagePercent: slippage,
+            });
+
+            if (!txHash) return;
+
+            addTransaction({
+                txHash,
+                timestamp: Date.now(),
+                fromSymbol: fromUniToken.symbol!,
+                toSymbol: toUniToken.symbol!,
+                fromAmount,
+                toAmount,
             });
         } catch (error) {
             console.error("Swap error:", error);
             toast.error("Swap execution failed");
         }
     };
+
 
 
     return (
@@ -128,8 +207,10 @@ const SwapWidget = () => {
                     </button>
                 </div>
                 {fromToken && (
-                    <div className="text-xs text-zinc-500 mt-1 text-right">
-                        {Number(fromBalance).toFixed(3)} {fromToken.symbol}
+                    <div className="text-xs text-zinc-500 mt-1 flex justify-end items-center gap-2">
+                        <span>
+                            {Number(fromBalance).toFixed(3)} {fromToken.symbol}
+                        </span>
                     </div>
                 )}
             </div>
@@ -172,7 +253,7 @@ const SwapWidget = () => {
                             Minimum Received: {minReceived ? `${minReceived} ${toToken.symbol}` : "--"}
                         </span>
                         <span>
-                            {Number(toBalance).toFixed()} {toToken.symbol}
+                            {Number(toBalance).toFixed(3)} {toToken.symbol}
                         </span>
                     </div>
                 )}
@@ -189,7 +270,7 @@ const SwapWidget = () => {
                     disabled={!fromToken || !toToken || !fromAmount || swapStatus.isPending}
                     className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
-                    {approveStatus.isPending ? "Swapping..." : "Swap"}
+                    {swapStatus.isPending ? "Swapping..." : "Swap"}
                 </button>
             ) : (
                 <button
@@ -199,6 +280,13 @@ const SwapWidget = () => {
                 >
                     {approveStatus.isPending ? "Approving..." : "Approve"}
                 </button>
+            )}
+
+            {estimatedGas && (
+                <div className="flex items-center text-xs text-zinc-400 mt-3 gap-2">
+                    <FaGasPump className="text-base text-amber-400" />
+                    Estimated Gas: {estimatedGas ? toReadableAmount(Number(estimatedGas), 9) : "--"} Gwei
+                </div>
             )}
 
             {showFromSelector && (

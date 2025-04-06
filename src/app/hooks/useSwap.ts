@@ -95,73 +95,74 @@ export const useSwap = () => {
     );
 
     const executeSwap = useCallback(
-        async ({
-            trade,
-            slippagePercent,
-        }: ExecuteSwapParams): Promise<void> => {
-            if (!wallet) {
-                toast.error("Wallet not connected");
-                return;
-            }
-
-            const { userAddress, signer } = wallet;
-
-            try {
-                setSwapStatus({
-                    isPending: true,
-                    isSuccess: false,
-                    isError: false,
-                });
-
-                toast.dismiss();
-                toast.loading("Swapping...");
-
-                const methodParams: MethodParameters = SwapRouter.swapCallParameters(
-                    [trade],
-                    {
-                        slippageTolerance: new Percent(slippagePercent * 100, 10_000),
-                        recipient: userAddress,
-                        deadline: Math.floor(Date.now() / 1000) + 60 * 10,
-                    }
-                );
-
-                const tx: ethers.providers.TransactionRequest = {
-                    to: UNISWAP_ROUTER,
-                    data: methodParams.calldata,
-                    value: methodParams.value,
-                };
-
-                const txResponse = await signer.sendTransaction(tx);
-                console.log("Swap TX sent:", txResponse.hash);
-
-                const receipt = await txResponse.wait();
-                console.log("Swap TX confirmed:", receipt);
-
-                toast.dismiss();
-                toast.success("Swap successful!");
-
-                setSwapStatus({
-                    isPending: false,
-                    isSuccess: true,
-                    isError: false,
-                    data: receipt,
-                });
-            } catch (err: unknown) {
-                console.error("Swap failed:", err);
-
-                toast.dismiss();
-                toast.error("Swap failed");
-
-                setSwapStatus({
-                    isPending: false,
-                    isSuccess: false,
-                    isError: true,
-                    error: err instanceof Error ? err : new Error("Unknown swap error"),
-                });
-            }
+        async ({ trade, slippagePercent }: ExecuteSwapParams): Promise<string | undefined> => {
+          if (!wallet) {
+            toast.error("Wallet not connected");
+            return;
+          }
+      
+          const { userAddress, signer } = wallet;
+          let txResponse: ethers.providers.TransactionResponse | undefined;
+      
+          try {
+            setSwapStatus({
+              isPending: true,
+              isSuccess: false,
+              isError: false,
+            });
+      
+            toast.dismiss();
+            toast.loading("Swapping...");
+      
+            const methodParams: MethodParameters = SwapRouter.swapCallParameters(
+              [trade],
+              {
+                slippageTolerance: new Percent(slippagePercent * 100, 10_000),
+                recipient: userAddress,
+                deadline: Math.floor(Date.now() / 1000) + 60 * 10,
+              }
+            );
+      
+            const tx: ethers.providers.TransactionRequest = {
+              to: UNISWAP_ROUTER,
+              data: methodParams.calldata,
+              value: methodParams.value,
+            };
+      
+            txResponse = await signer.sendTransaction(tx);
+      
+            const receipt = await txResponse.wait();
+      
+            toast.dismiss();
+            toast.success("Swap successful!");
+      
+            setSwapStatus({
+              isPending: false,
+              isSuccess: true,
+              isError: false,
+              data: receipt,
+              txHash: receipt.transactionHash,
+            });
+      
+            return receipt.transactionHash;
+          } catch (err: unknown) {
+            toast.dismiss();
+            console.error("Swap failed:", err);
+      
+            setSwapStatus({
+              isPending: false,
+              isSuccess: false,
+              isError: true,
+              error: err instanceof Error ? err : new Error("Unknown swap error"),
+              txHash: txResponse?.hash,
+            });
+      
+            return undefined;
+          }
         },
         [wallet]
-    );
+      );
+      
 
     return {
         createTrade,

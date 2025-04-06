@@ -4,13 +4,16 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import { Chain } from "thirdweb"
 import { useActiveAccount, useActiveWalletChain } from "thirdweb/react"
 import { ethers } from "ethers"
+import { SwapTransaction } from "@/types/swapTypes"
 
 interface GlobalContextProps {
-  activeChain: Chain | null | undefined
-  userAddress: string | null | undefined
-  provider: ethers.providers.Web3Provider | null
-  signer: ethers.Signer | null
-  walletConnected: boolean
+  activeChain: Chain | null | undefined;
+  userAddress: string | null | undefined;
+  provider: ethers.providers.Web3Provider | null;
+  signer: ethers.Signer | null;
+  walletConnected: boolean;
+  txHistory: SwapTransaction[];
+  addTransaction: (tx: SwapTransaction) => void;
 }
 
 const GlobalContext = createContext<GlobalContextProps>({
@@ -18,7 +21,9 @@ const GlobalContext = createContext<GlobalContextProps>({
   userAddress: null,
   provider: null,
   signer: null,
-  walletConnected: false
+  walletConnected: false,
+  txHistory: [],
+  addTransaction: () => {}
 })
 
 export const useGlobal = () => useContext(GlobalContext)
@@ -30,6 +35,7 @@ export const GlobalProvider = ({ children }: { children: React.ReactNode }) => {
   const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null)
   const [signer, setSigner] = useState<ethers.Signer | null>(null)
   const [walletConnected, setWalletConnected] = useState(false)
+  const [txHistory, setTxHistory] = useState<SwapTransaction[]>([]);
 
   useEffect(() => {
     const setup = async () => {
@@ -52,14 +58,22 @@ export const GlobalProvider = ({ children }: { children: React.ReactNode }) => {
     setWalletConnected(!!activeAccount?.address && !!signer && !!provider)
   },[activeAccount, signer, provider])
 
-
-  const contextValue = useMemo(() => ({
-    activeChain,
-    userAddress: activeAccount?.address,
-    provider,
-    signer,
-    walletConnected
-  }), [activeChain, activeAccount?.address, provider, signer, walletConnected]);
+  const contextValue = useMemo(() => {
+    const addTransaction = (tx: SwapTransaction) => {
+      setTxHistory(prev => [tx, ...prev.slice(0, 9)]);
+    };
+  
+    return {
+      activeChain,
+      userAddress: activeAccount?.address,
+      provider,
+      signer,
+      walletConnected,
+      txHistory,
+      addTransaction,
+    };
+  }, [activeChain, activeAccount?.address, provider, signer, walletConnected, txHistory]);
+  
   
 
   return (

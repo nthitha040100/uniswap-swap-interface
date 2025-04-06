@@ -5,9 +5,12 @@ import Header from "./components/Header"
 import ConnectWallet from "./components/ConnectWallet"
 import SwapWidget from "./components/SwapWidget"
 import { Bounce, ToastContainer } from "react-toastify"
+import TransactionHistory from "./components/TransactionHistory"
+import { useGlobal } from "./providers/GlobalProvider"
 
 export default function Home() {
   const account = useActiveAccount()
+  const {txHistory} = useGlobal()
 
   return (
     <>
@@ -19,7 +22,13 @@ export default function Home() {
         </div>
       )}
 
-      <SwapWidget />
+      <div className="min-h-[calc(100vh-5rem)] flex items-start sm:items-center justify-center px-4 py-8">
+        <div className="w-full max-w-2xl space-y-8">
+          <SwapWidget />
+          <TransactionHistory transactions={txHistory} />
+        </div>
+      </div>
+
       <ToastContainer
         position="bottom-right"
         autoClose={5000}

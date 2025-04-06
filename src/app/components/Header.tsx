@@ -3,12 +3,15 @@ import ConnectWallet from "./ConnectWallet"
 
 const Header = () => {
 
-  const {walletConnected} = useGlobal()
+  const { walletConnected } = useGlobal()
 
-  if(!walletConnected) return null
+  if (!walletConnected) return null
 
   return (
-    <header className="w-full flex justify-end p-4 border-b border-gray-700 bg-[#1a1a1a]">
+    <header className="w-full px-4 py-3 border-b border-zinc-800 bg-[#1a1a1a] flex items-center justify-between">
+      <h1 className="text-white text-lg font-semibold">
+        Uniswap Swap Interface
+      </h1>
       <ConnectWallet />
     </header>
   )

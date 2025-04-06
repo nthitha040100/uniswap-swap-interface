@@ -1,9 +1,14 @@
 import { useGlobal } from "../providers/GlobalProvider";
+import { useMemo } from "react";
 
 export const useWalletSafe = () => {
   const { signer, provider, userAddress } = useGlobal();
 
-  const isReady = !!signer && !!provider && !!userAddress;
+  return useMemo(() => {
+    if (!signer || !provider || !userAddress) {
+      return null;
+    }
 
-  return isReady ? { signer, provider, userAddress } : null;
+    return { signer, provider, userAddress };
+  }, [signer, provider, userAddress]);
 };

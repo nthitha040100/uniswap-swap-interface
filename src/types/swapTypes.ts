@@ -11,9 +11,14 @@ export type Token = {
   logoURI: string
 }
 
+type QuoteFetchStatus = "idle" | "success" | "failed" | "noPool";
+
 export type UseQuoteResult = {
   quote: string
   minReceived: string
+  status: QuoteFetchStatus
+  gasEstimate: string | null
+
 }
 
 export enum Environment {
@@ -53,11 +58,22 @@ export type ExecuteSwapParams = {
     slippagePercent: number;
 }
 
-export type  SwapStatus = {
-    isPending: boolean;
-    isSuccess: boolean;
-    isError: boolean;
-    error?: Error;
-    data?: ethers.providers.TransactionReceipt;
+export type SwapStatus = {
+  isPending: boolean;
+  isSuccess: boolean;
+  isError: boolean;
+  error?: Error;
+  data?: ethers.providers.TransactionReceipt;
+  txHash?: string;
+  gasEstimate?: string;
+}
+
+export type SwapTransaction = {
+  txHash: string;
+  timestamp: number;
+  fromSymbol: string;
+  toSymbol: string;
+  fromAmount: string;
+  toAmount: string;
 }
 
