@@ -3,7 +3,7 @@
 import React from 'react';
 import { SwapTransaction } from '@/types/swapTypes';
 import { getExplorerTxUrl } from '@/utils/getExplorerUrl';
-import { useGlobal } from '../providers/GlobalProvider';
+import { useGlobal } from '../providers/GlobalProviders';
 
 const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);

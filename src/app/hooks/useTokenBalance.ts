@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { getContract } from "thirdweb"
 import client from "@/utils/thirdwebClient"
-import { useGlobal } from "../providers/GlobalProvider"
+import { useGlobal } from "../providers/GlobalProviders"
 import { balanceOf } from "thirdweb/extensions/erc20"
 import { formatUnits } from "ethers/lib/utils"
 import { Token } from "@/types/swapTypes"

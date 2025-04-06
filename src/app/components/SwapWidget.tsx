@@ -15,7 +15,7 @@ import { useSwap } from "../hooks/useSwap";
 import { convertToUniToken, toReadableAmount } from "../lib/conversion";
 import { FaGasPump } from "react-icons/fa";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { useGlobal } from "../providers/GlobalProvider";
+import { useGlobal } from "../providers/GlobalProviders";
 
 
 const SwapWidget = () => {

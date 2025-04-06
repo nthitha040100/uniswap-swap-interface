@@ -6,7 +6,7 @@ import ConnectWallet from "./components/ConnectWallet"
 import SwapWidget from "./components/SwapWidget"
 import { Bounce, ToastContainer } from "react-toastify"
 import TransactionHistory from "./components/TransactionHistory"
-import { useGlobal } from "./providers/GlobalProvider"
+import { useGlobal } from "./providers/GlobalProviders"
 
 export default function Home() {
   const account = useActiveAccount()

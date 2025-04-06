@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { getContract } from "thirdweb"
-import { useGlobal } from "../providers/GlobalProvider"
+import { useGlobal } from "../providers/GlobalProviders"
 import client from "@/utils/thirdwebClient"
 import { Token } from "@/types/swapTypes"
 import { allowance as erc20Allowance } from "thirdweb/extensions/erc20"

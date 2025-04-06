@@ -8,7 +8,7 @@ import client from "@/utils/thirdwebClient";
 import { UNISWAP_ROUTER } from "../constants/addresses";
 import { useSendAndConfirmTransaction } from "thirdweb/react";
 import { useEffect } from "react";
-import { useGlobal } from "../providers/GlobalProvider";
+import { useGlobal } from "../providers/GlobalProviders";
 
 export const useApprove = () => {
   const {

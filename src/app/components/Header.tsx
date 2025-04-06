@@ -1,4 +1,4 @@
-import { useGlobal } from "../providers/GlobalProvider"
+import { useGlobal } from "../providers/GlobalProviders"
 import ConnectWallet from "./ConnectWallet"
 
 const Header = () => {

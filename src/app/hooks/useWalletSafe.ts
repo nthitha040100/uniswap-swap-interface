@@ -1,4 +1,4 @@
-import { useGlobal } from "../providers/GlobalProvider";
+import { useGlobal } from "../providers/GlobalProviders";
 import { useMemo } from "react";
 
 export const useWalletSafe = () => {

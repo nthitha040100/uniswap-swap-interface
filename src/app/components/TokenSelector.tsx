@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { normalizeIpfsUri } from '@/utils/normalizeIpfsUri';
 import { IoClose } from 'react-icons/io5';
-import { useGlobal } from '../providers/GlobalProvider';
+import { useGlobal } from '../providers/GlobalProviders';
 import { Token } from '@/types/swapTypes';
 
 const TokenSelector = ({
