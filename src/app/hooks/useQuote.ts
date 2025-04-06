@@ -3,20 +3,30 @@
 import { useEffect, useState } from "react"
 import { Token as UniToken, CurrencyAmount } from "@uniswap/sdk-core"
 import { Route, Pool, FeeAmount } from "@uniswap/v3-sdk"
-import { Token, UseQuoteResult } from "@/utils/types"
-import { getEthersProvider } from "../lib/getEthersProvider"
+import { UseQuoteResult } from "@/types/swapTypes"
 import { getPoolData } from "../lib/getPoolData"
 import { toast } from "react-toastify"
+import { useWalletSafe } from "./useWalletSafe"
 
 export function useQuote(
-  fromToken: Token | null,
-  toToken: Token | null,
+  fromToken: UniToken | null,
+  toToken: UniToken | null,
   amountIn: string,
   slippage: number
 ): UseQuoteResult {
   const [quote, setQuote] = useState<UseQuoteResult>({ quote: "", minReceived: "" })
+  const wallet = useWalletSafe()
+
 
   useEffect(() => {
+
+    if (!wallet) {
+      toast.error("Connect your wallet to proceed");
+      return;
+    }
+
+    const { provider } = wallet;
+
     async function fetchQuote() {
       if (!fromToken || !toToken || !amountIn || Number(amountIn) === 0) {
         setQuote({ quote: "", minReceived: "" })
@@ -24,36 +34,30 @@ export function useQuote(
       }
 
       try {
-        const chainId = fromToken.chainId
-        const provider = getEthersProvider(chainId)
+        const poolData = await getPoolData(provider, fromToken, toToken, FeeAmount.MEDIUM)
 
-        const tokenIn = new UniToken(chainId, fromToken.address, fromToken.decimals, fromToken.symbol)
-        const tokenOut = new UniToken(chainId, toToken.address, toToken.decimals, toToken.symbol)
-
-        const poolData = await getPoolData(provider, tokenIn, tokenOut, FeeAmount.MEDIUM)
-        
         if (!poolData) {
           toast.error("No direct pool for this swap")
           return setQuote({ quote: "", minReceived: "" })
         }
 
         const pool = new Pool(
-          tokenIn,
-          tokenOut,
+          fromToken,
+          toToken,
           FeeAmount.MEDIUM,
           poolData.sqrtPriceX96.toString(),
           poolData.liquidity.toString(),
           poolData.tick
         )
 
-        const route = new Route([pool], tokenIn, tokenOut)
+        const route = new Route([pool], fromToken, toToken)
 
         const amount = CurrencyAmount.fromRawAmount(
-          tokenIn,
-          BigInt(Math.floor(Number(amountIn) * 10 ** tokenIn.decimals)).toString()
+          fromToken,
+          BigInt(Math.floor(Number(amountIn) * 10 ** fromToken.decimals)).toString()
         )
 
-        const tradeOut = route.midPrice.quote(amount)        
+        const tradeOut = route.midPrice.quote(amount)
 
         const quoteStr = tradeOut.toSignificant(6)
         const quoteFloat = parseFloat(quoteStr)
@@ -68,7 +72,7 @@ export function useQuote(
     }
 
     fetchQuote()
-  }, [fromToken, toToken, amountIn, slippage])
+  }, [fromToken, toToken, amountIn, wallet, slippage])
 
   return quote
 }

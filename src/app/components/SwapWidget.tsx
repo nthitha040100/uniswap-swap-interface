@@ -5,11 +5,17 @@ import TokenSelector from "./TokenSelector"
 import { AiOutlineSwap } from "react-icons/ai";
 import Image from "next/image"
 import { useTokenBalance } from "../hooks/useTokenBalance";
-import { Token } from "@/utils/types";
 import SlippageSelector from "./SlippageSelector";
 import { useQuote } from "../hooks/useQuote";
+import { useAllowance } from "../hooks/useAllowance";
+import { useApprove } from "../hooks/useApprove";
+import { Token } from "@/types/swapTypes";
+import { toast } from "react-toastify";
+import { useSwap } from "../hooks/useSwap";
+import { convertToUniToken } from "../lib/conversion";
 
 const SwapWidget = () => {
+
     const [fromToken, setFromToken] = useState<Token | null>(null)
     const [toToken, setToToken] = useState<Token | null>(null)
     const [fromAmount, setFromAmount] = useState("")
@@ -19,10 +25,17 @@ const SwapWidget = () => {
     const [showToSelector, setShowToSelector] = useState(false)
     const [slippage, setSlippage] = useState(0.5)
 
-
     const fromBalance = useTokenBalance(fromToken)
     const toBalance = useTokenBalance(toToken)
-    const quoteAmount = useQuote(fromToken, toToken, fromAmount, slippage)
+    const quoteAmount = useQuote(
+        convertToUniToken(fromToken),
+        convertToUniToken(toToken),
+        fromAmount,
+        slippage
+    )
+    const allowance = useAllowance(fromToken);
+    const { approveToken, approveStatus } = useApprove();
+    const { createTrade, executeSwap, swapStatus } = useSwap();
 
     useEffect(() => {
         async function getEstimateOut() {
@@ -35,12 +48,54 @@ const SwapWidget = () => {
         getEstimateOut()
     }, [quoteAmount])
 
-
     const handleSwitch = () => {
         const temp = fromToken
         setFromToken(toToken)
         setToToken(temp)
     }
+
+    const hasSufficientAllowance = () => {
+        if (!fromToken || !allowance) return false;
+        return parseFloat(allowance) >= parseFloat(fromAmount || "0");
+    }
+
+    const handleApprove = async () => {
+        if (!fromToken || !fromAmount) return;
+
+        await approveToken({
+            token: fromToken,
+            amount: fromAmount,
+        });
+    };
+
+    const handleSwap = async () => {
+
+        const fromUniToken = convertToUniToken(fromToken);
+        const toUniToken = convertToUniToken(toToken);
+
+        if (!fromUniToken || !toUniToken) {
+            toast.error("Missing input or wallet connection");
+            return;
+        }
+
+        try {
+            const trade = await createTrade({
+                fromToken: fromUniToken,
+                toToken: toUniToken,
+                amountIn: fromAmount,
+            });
+
+            if (!trade) return;
+
+            await executeSwap({
+                trade,
+                slippagePercent: slippage,
+            });
+        } catch (error) {
+            console.error("Swap error:", error);
+            toast.error("Swap execution failed");
+        }
+    };
 
 
     return (
@@ -128,18 +183,29 @@ const SwapWidget = () => {
             </div>
 
 
-            <button
-                disabled={!fromToken || !toToken || !fromAmount}
-                className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-                Swap
-            </button>
+            {hasSufficientAllowance() ? (
+                <button
+                    onClick={handleSwap}
+                    disabled={!fromToken || !toToken || !fromAmount || swapStatus.isPending}
+                    className="w-full bg-pink-600 hover:bg-pink-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                    {approveStatus.isPending ? "Swapping..." : "Swap"}
+                </button>
+            ) : (
+                <button
+                    onClick={handleApprove}
+                    disabled={!fromToken || !fromAmount || approveStatus.isPending}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                    {approveStatus.isPending ? "Approving..." : "Approve"}
+                </button>
+            )}
 
             {showFromSelector && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
                     <TokenSelector
                         onSelect={(token) => {
-                            console.log("swap From :", token)
+
                             setFromToken(token)
                             setShowFromSelector(false)
                         }}
@@ -153,7 +219,6 @@ const SwapWidget = () => {
                 <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
                     <TokenSelector
                         onSelect={(token) => {
-                            console.log("swap To :", token)
                             setToToken(token)
                             setShowToSelector(false)
                         }}

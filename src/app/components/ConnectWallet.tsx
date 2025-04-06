@@ -1,12 +1,12 @@
 import { ConnectButton } from "thirdweb/react"
-import { ethereum, sepolia } from "thirdweb/chains"
+import { arbitrum, ethereum, sepolia } from "thirdweb/chains"
 import client from "@/utils/thirdwebClient"
 
 const ConnectWallet = () => {
   return (
     <ConnectButton
       client={client}
-      chains={[ethereum, sepolia]}
+      chains={[ethereum, sepolia, arbitrum]}
       connectButton={{
         label: "Connect Wallet",
         style: {

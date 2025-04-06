@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { Token } from '@/utils/types'
 import { normalizeIpfsUri } from '@/utils/normalizeIpfsUri';
 import { IoClose } from 'react-icons/io5';
-import { useGlobal } from '../providers/globalProvider';
-import { getNativeToken } from '../lib/nativeToken';
+import { useGlobal } from '../providers/GlobalProvider';
+import { Token } from '@/types/swapTypes';
 
 const TokenSelector = ({
     onSelect,
@@ -33,11 +32,6 @@ const TokenSelector = ({
                 ...token,
                 logoURI: normalizeIpfsUri(token.logoURI),
               }))
-      
-            if (activeChain?.id) {
-              const native = getNativeToken(activeChain.id)
-              filtered.unshift(native) // insert native token at the top
-            }
       
             setTokenList(filtered)
             setFilteredTokens(filtered)

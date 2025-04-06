@@ -11,6 +11,7 @@ const nextConfig = {
       'ipfs.io',
       'cryptologos.cc',
       'assets.kraken.com',
+      'dynamic-assets.coinbase.com'
     ],
   },
 }

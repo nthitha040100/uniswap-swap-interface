@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThirdwebProvider } from "thirdweb/react";
-import { GlobalProvider } from "./providers/globalProvider";
+import { GlobalProvider } from "./providers/GlobalProvider";
 
 export const metadata: Metadata = {
   title: "Swap Widget",
