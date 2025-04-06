@@ -1,6 +1,6 @@
 import { Token as UniToken } from '@uniswap/sdk-core'
 import { FeeAmount } from '@uniswap/v3-sdk'
-import { Environment, ExampleConfig, Token } from '@/utils/types'
+import { Environment, ExampleConfig, Token } from '@/types/swapTypes'
 
 export const getCurrentConfig = (
     fromToken: Token,
@@ -37,7 +37,7 @@ export const getCurrentConfig = (
         },
         tokens: {
             in: fromUniToken,
-            amountIn: Number(amount),            
+            amountIn: Number(amount),
             out: toUniToken,
             poolFee: FeeAmount.MEDIUM,
         }
